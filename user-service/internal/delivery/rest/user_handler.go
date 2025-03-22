@@ -4,9 +4,12 @@ import (
 	"encoding/json"
 	"net/http"
 	"strconv"
+	"strings"
 
 	"user-service/domain"
+	"user-service/internal/delivery/middleware"
 	"user-service/internal/usecase"
+	"user-service/pkg/utils"
 
 	"github.com/gorilla/mux"
 )
@@ -26,34 +29,34 @@ func (h *UserHandler) GetUserByID(w http.ResponseWriter, r *http.Request) {
 	idStr := vars["id"]
 	id, err := strconv.Atoi(idStr)
 	if err != nil {
-		h.respondWithJSON(w, http.StatusBadRequest, map[string]string{"error": "Invalid ID"})
+		utils.RespondWithJSON(w, http.StatusBadRequest, map[string]string{"error": "Invalid ID"})
 		return
 	}
 
 	user, err := h.userUsecase.GetUserByID(r.Context(), id)
 	if err != nil {
-		h.respondWithJSON(w, http.StatusInternalServerError, map[string]string{"error": err.Error()})
+		utils.RespondWithJSON(w, http.StatusInternalServerError, map[string]string{"error": err.Error()})
 		return
 	}
 
-	h.respondWithJSON(w, http.StatusOK, user)
+	utils.RespondWithJSON(w, http.StatusOK, user)
 }
 
 // CreateUser creates a new user --> /users
 func (h *UserHandler) CreateUser(w http.ResponseWriter, r *http.Request) {
 	var user domain.User
 	if err := json.NewDecoder(r.Body).Decode(&user); err != nil {
-		h.respondWithJSON(w, http.StatusBadRequest, map[string]string{"error": "Invalid request payload"})
+		utils.RespondWithJSON(w, http.StatusBadRequest, map[string]string{"error": "Invalid request payload"})
 		return
 	}
 
 	createdUser, err := h.userUsecase.CreateUser(r.Context(), user)
 	if err != nil {
-		h.respondWithJSON(w, http.StatusInternalServerError, map[string]string{"error": err.Error()})
+		utils.RespondWithJSON(w, http.StatusInternalServerError, map[string]string{"error": err.Error()})
 		return
 	}
 
-	h.respondWithJSON(w, http.StatusOK, createdUser)
+	utils.RespondWithJSON(w, http.StatusOK, createdUser)
 }
 
 // Login logs in a user --> /users/login
@@ -64,39 +67,40 @@ func (h *UserHandler) Login(w http.ResponseWriter, r *http.Request) {
 	}
 
 	if err := json.NewDecoder(r.Body).Decode(&login); err != nil {
-		h.respondWithJSON(w, http.StatusBadRequest, map[string]string{"error": "Invalid request payload"})
+		utils.RespondWithJSON(w, http.StatusBadRequest, map[string]string{"error": "Invalid request payload"})
 		return
 	}
 
 	token, err := h.userUsecase.Login(r.Context(), login.Email, login.Password)
 	if err != nil {
-		h.respondWithJSON(w, http.StatusUnauthorized, map[string]string{"error": err.Error()})
+		utils.RespondWithJSON(w, http.StatusUnauthorized, map[string]string{"error": err.Error()})
 		return
 	}
 
-	h.respondWithJSON(w, http.StatusOK, map[string]string{"token": token})
+	utils.RespondWithJSON(w, http.StatusOK, map[string]string{"token": token})
 }
 
 // ValidateSession validates a session token --> /users/validate
 func (h *UserHandler) ValidateSession(w http.ResponseWriter, r *http.Request) {
-	token := r.Header.Get("Authorization")
-	if token == "" {
-		h.respondWithJSON(w, http.StatusUnauthorized, map[string]string{"error": "Unauthorized"})
+	tokenHeader := r.Header.Get("Authorization")
+	if tokenHeader == "" {
+		utils.RespondWithJSON(w, http.StatusUnauthorized, map[string]string{"error": "Unauthorized"})
 		return
 	}
 
-	validateToken, err := h.userUsecase.ValidateToken(r.Context(), token)
-	if err != nil || validateToken != token {
-		h.respondWithJSON(w, http.StatusUnauthorized, map[string]string{"error": "Unauthorized"})
+	_, email, err := middleware.GetUserFromContext(r.Context())
+	if err != nil {
+		utils.RespondWithJSON(w, http.StatusUnauthorized, map[string]string{"error": "Unauthorized"})
 		return
 	}
 
-	h.respondWithJSON(w, http.StatusOK, map[string]string{"message": "Session is valid"})
-}
+	tokenString := strings.TrimPrefix(tokenHeader, "Bearer ")
 
-// Helper function to respond with JSON
-func (h *UserHandler) respondWithJSON(w http.ResponseWriter, status int, payload interface{}) {
-	w.Header().Set("Content-Type", "application/json")
-	w.WriteHeader(status)
-	json.NewEncoder(w).Encode(payload)
+	validateToken, err := h.userUsecase.ValidateToken(r.Context(), email)
+	if err != nil || validateToken != tokenString {
+		utils.RespondWithJSON(w, http.StatusUnauthorized, map[string]string{"error": "Unauthorized"})
+		return
+	}
+
+	utils.RespondWithJSON(w, http.StatusOK, map[string]string{"message": "Session is valid"})
 }

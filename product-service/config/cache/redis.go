@@ -18,11 +18,11 @@ func NewRedisClient(cfg *config.Config) (rdb *redis.Client, err error) {
 
 	rdbConfig := cfg.Redis
 
-	redisClient := redis.NewClient(&redis.Options{
+	rdb = redis.NewClient(&redis.Options{
 		Addr: fmt.Sprintf("%s:%s", rdbConfig.Host, rdbConfig.Port),
 	})
 
-	statCmd := redisClient.Ping(context.Background())
+	statCmd := rdb.Ping(context.Background())
 	err = statCmd.Err()
 	if err != nil {
 		return

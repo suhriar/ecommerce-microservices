@@ -11,14 +11,18 @@ import (
 	_ "github.com/go-sql-driver/mysql"
 )
 
-// NewMySQLConnection creates and returns a new MySQL database connection
-func NewMySQLConnection(cfg *config.Config) (*sql.DB, error) {
+func NewMySQLConnection(cfg *config.Config) (db *sql.DB, err error) {
+	defer func() {
+		if r := recover(); r != nil {
+			err = fmt.Errorf("error occured %+v", r)
+		}
+	}()
 	dbConfig := cfg.MySql
 
 	dsn := fmt.Sprintf("%s:%s@tcp(%s:%s)/%s?parseTime=true",
 		dbConfig.User, dbConfig.Password, dbConfig.Host, dbConfig.Port, dbConfig.Name)
 
-	db, err := sql.Open("mysql", dsn)
+	db, err = sql.Open("mysql", dsn)
 	if err != nil {
 		return nil, err
 	}

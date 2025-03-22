@@ -3,7 +3,6 @@ package cache
 import (
 	"context"
 	"fmt"
-	"time"
 
 	"user-service/config"
 
@@ -25,12 +24,6 @@ func NewRedisClient(cfg *config.Config) (rdb *redis.Client, err error) {
 
 	statCmd := rdb.Ping(context.Background())
 	err = statCmd.Err()
-	if err != nil {
-		return
-	}
-
-	fmt.Println("nknk")
-	err = rdb.Set(context.Background(), "email", "dddt", time.Hour*24).Err() // Set expiration to 24 hours
 	if err != nil {
 		return
 	}

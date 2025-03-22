@@ -7,11 +7,14 @@ import (
 	"github.com/joho/godotenv"
 )
 
+var AppConfig *Config
+
 // Config holds all configuration for the application
 type Config struct {
 	Server ServerConfig
 	MySql  MySqlConfig
 	Redis  RedisConfig
+	Jwt    JwtConfig
 }
 
 // ServerConfig holds server related configuration
@@ -33,14 +36,18 @@ type RedisConfig struct {
 	Port string
 }
 
+type JwtConfig struct {
+	Secret string
+}
+
 // LoadConfig loads configuration from environment variables
-func LoadConfig() *Config {
+func LoadConfig() {
 	// Load .env file if it exists
 	if err := godotenv.Load(); err != nil {
 		log.Println("Warning: .env file not found")
 	}
 
-	return &Config{
+	AppConfig = &Config{
 		Server: ServerConfig{
 			Port: getEnv("PORT", "8080"),
 		},
@@ -54,6 +61,9 @@ func LoadConfig() *Config {
 		Redis: RedisConfig{
 			Host: getEnv("REDIS_HOST", "localhost"),
 			Port: getEnv("REDIS_PORT", "6379"),
+		},
+		Jwt: JwtConfig{
+			Secret: getEnv("JWT_SECRET_KEY", "secret"),
 		},
 	}
 }

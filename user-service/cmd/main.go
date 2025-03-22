@@ -19,17 +19,17 @@ import (
 
 func main() {
 	// Load environment variables
-	conf := config.LoadConfig()
+	config.LoadConfig()
 
 	// Initialize DB
-	db, err := database.NewMySQLConnection(conf)
+	db, err := database.NewMySQLConnection(config.AppConfig)
 	if err != nil {
 		log.Fatalf("Failed to connect to database: %v", err)
 	}
 	defer db.Close()
 
 	// Initialize DB
-	rdb, err := cache.NewRedisClient(conf)
+	rdb, err := cache.NewRedisClient(config.AppConfig)
 	if err != nil {
 		log.Fatalf("Failed to connect to redis: %v", err)
 	}

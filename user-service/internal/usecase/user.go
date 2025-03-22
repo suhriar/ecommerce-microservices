@@ -10,6 +10,7 @@ import (
 	"user-service/domain"
 	repo "user-service/internal/repository/mysql"
 	cache "user-service/internal/repository/redis"
+	"user-service/pkg/utils"
 
 	"github.com/go-redis/redis/v8"
 	"github.com/golang-jwt/jwt/v4"
@@ -83,54 +84,29 @@ func (s *userUsecaseImpl) Login(ctx context.Context, email, password string) (to
 	}
 
 	// After validation, generate JWT token
-	claims := &JwtCustomClaims{
-		Name:  user.Username,
-		Email: user.Email,
-		RegisteredClaims: jwt.RegisteredClaims{
-			ExpiresAt: jwt.NewNumericDate(time.Now().Add(time.Hour * 24)),
-		},
-	}
-
-	tkn := jwt.NewWithClaims(jwt.SigningMethodHS256, claims)
-	t, err := tkn.SignedString([]byte("secret"))
+	tokenString, err := utils.GenerateJWT(user)
 	if err != nil {
 		return "", err
 	}
-
 	// Store the JWT token in Redis with the user email as the key
-	err = s.cache.SetUserTokenByEmail(ctx, email, t, time.Hour*24) // Set expiration to 24 hours
+	err = s.cache.SetUserTokenByEmail(ctx, email, tokenString, time.Hour*24) // Set expiration to 24 hours
 	if err != nil {
 		return "", err
 	}
 
 	// Return the user and the generated JWT token
-	return t, nil
+	return tokenString, nil
 }
 
-func (s *userUsecaseImpl) ValidateToken(ctx context.Context, token string) (validateToken string, err error) {
-	claims := &JwtCustomClaims{}
-	fmt.Println(token)
-	t, err := jwt.ParseWithClaims(token, claims, func(token *jwt.Token) (interface{}, error) {
-		return []byte("secret"), nil // Kunci yang sama saat membuat token
-	})
-
-	if err != nil {
-		return validateToken, err
-	}
-
-	if !t.Valid {
-		return validateToken, fmt.Errorf("invalid token")
-	}
-	fmt.Println(claims.Email)
+func (s *userUsecaseImpl) ValidateToken(ctx context.Context, email string) (validateToken string, err error) {
 	// Retrieve the JWT token from Redis
-	validateToken, err = s.cache.GetUserTokenByEmail(ctx, claims.Email)
+	validateToken, err = s.cache.GetUserTokenByEmail(ctx, email)
 	if err != nil {
 		if errors.Is(err, redis.Nil) {
 			return "", fmt.Errorf("session not found")
 		}
 		return "", err
 	}
-	fmt.Println(validateToken)
 
 	return validateToken, nil
 }
