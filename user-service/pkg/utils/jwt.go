@@ -10,8 +10,8 @@ import (
 )
 
 type JwtCustomClaims struct {
-	Name  string `json:"name"`
-	Email string `json:"email"`
+	Username string `json:"username"`
+	Email    string `json:"email"`
 	jwt.RegisteredClaims
 }
 
@@ -19,9 +19,8 @@ type JwtCustomClaims struct {
 func GenerateJWT(user domain.User) (tokenString string, err error) {
 	// Buat claims dengan data user
 	claims := &JwtCustomClaims{
-
-		Name:  user.Username,
-		Email: user.Email,
+		Username: user.Username,
+		Email:    user.Email,
 		RegisteredClaims: jwt.RegisteredClaims{
 			ExpiresAt: jwt.NewNumericDate(time.Now().Add(time.Hour * 24)),
 		},

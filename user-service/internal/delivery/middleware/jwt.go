@@ -73,7 +73,7 @@ func (m *JWTMiddleware) Middleware(next http.Handler) http.Handler {
 		}
 
 		// Tambahkan data user ke context
-		ctx := context.WithValue(r.Context(), UserNameKey, claims.Name)
+		ctx := context.WithValue(r.Context(), UserNameKey, claims.Username)
 		ctx = context.WithValue(ctx, UserEmailKey, claims.Email)
 
 		// Lanjutkan request dengan context yang telah diperbarui

@@ -13,8 +13,9 @@ import (
 	"user-service/pkg/utils"
 
 	"github.com/go-redis/redis/v8"
-	"github.com/golang-jwt/jwt/v4"
 	"github.com/rs/zerolog"
+	"github.com/rs/zerolog/log"
+	"golang.org/x/crypto/bcrypt"
 )
 
 var logger = zerolog.New(os.Stdout).With().Timestamp().Logger()
@@ -38,12 +39,6 @@ func NewUserUsecase(repo repo.UserRepository, cache cache.UserCache) UserUsecase
 	}
 }
 
-type JwtCustomClaims struct {
-	Name  string `json:"name"`
-	Email string `json:"email"`
-	jwt.RegisteredClaims
-}
-
 // GetUserByID retrieves a user by ID (stub for now).
 func (s *userUsecaseImpl) GetUserByID(ctx context.Context, id int) (user domain.User, err error) {
 	user, err = s.repo.GetUserByID(ctx, id)
@@ -57,6 +52,14 @@ func (s *userUsecaseImpl) GetUserByID(ctx context.Context, id int) (user domain.
 
 // CreateUser creates a new user (stub for now).
 func (s *userUsecaseImpl) CreateUser(ctx context.Context, req domain.User) (user domain.User, err error) {
+	hashedPassword, err := bcrypt.GenerateFromPassword([]byte(req.Password), bcrypt.DefaultCost)
+	if err != nil {
+		log.Error().Err(err).Msg("Error hashing password")
+		return user, err
+	}
+
+	req.Password = string(hashedPassword)
+
 	createdUser, err := s.repo.CreateUser(ctx, req)
 	if err != nil {
 		logger.Error().Err(err).Msg("Error creating user")
@@ -78,9 +81,13 @@ func (s *userUsecaseImpl) CreateUser(ctx context.Context, req domain.User) (user
 //}
 
 func (s *userUsecaseImpl) Login(ctx context.Context, email, password string) (token string, err error) {
-	user, err := s.repo.GetUserByEmailAndPassword(ctx, email, password)
+	user, err := s.repo.GetUserByEmail(ctx, email)
 	if err != nil {
 		return "", err
+	}
+
+	if err := bcrypt.CompareHashAndPassword([]byte(user.Password), []byte(password)); err != nil {
+		return "", errors.New("invalid email or password")
 	}
 
 	// After validation, generate JWT token
