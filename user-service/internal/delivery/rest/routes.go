@@ -9,27 +9,33 @@ import (
 
 // RegisterRoutes registers all API routes
 func RegisterRoutes(router *mux.Router, userHandler *UserHandler) {
+	// Logger Middleware
+	router.Use(middleware.LoggingMiddleware)
+
+	// API Router
+	apiRouter := router.PathPrefix("/api").Subrouter()
+
 	// Health check
-	router.HandleFunc("/health", HealthCheck).Methods("GET")
+	apiRouter.HandleFunc("/health", HealthCheck).Methods("GET")
 
 	// Inisialisasi JWT middleware
 	jwtMiddleware := middleware.NewJWTMiddleware()
 
 	// Register user routes
-	registerUserRoutes(router, userHandler, jwtMiddleware)
+	registerUserRoutes(apiRouter, userHandler, jwtMiddleware)
 }
 
 // registerUserRoutes registers user related routes
 func registerUserRoutes(router *mux.Router, handler *UserHandler, jwtMiddleware *middleware.JWTMiddleware) {
 	userRouter := router.PathPrefix("/users").Subrouter()
 
-	// Public routes (tidak memerlukan autentikasi)
+	// Public routes
 	userRouter.HandleFunc("", handler.CreateUser).Methods("POST")
 	userRouter.HandleFunc("/login", handler.Login).Methods("POST")
 
-	// Protected routes (memerlukan autentikasi)
+	// Protected routes
 	protected := userRouter.PathPrefix("").Subrouter()
-	protected.Use(jwtMiddleware.RequireAuth) // Menerapkan JWT middleware untuk semua routes di bawah ini
+	protected.Use(jwtMiddleware.RequireAuth)
 
 	protected.HandleFunc("/{id:[0-9]+}", handler.GetUserByID).Methods("GET")
 	protected.HandleFunc("/validate", handler.ValidateSession).Methods("GET")

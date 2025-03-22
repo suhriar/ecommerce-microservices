@@ -3,6 +3,7 @@ package config
 import (
 	"log"
 	"os"
+	"strconv"
 
 	"github.com/joho/godotenv"
 )
@@ -11,10 +12,11 @@ var AppConfig *Config
 
 // Config holds all configuration for the application
 type Config struct {
-	Server ServerConfig
-	MySql  MySqlConfig
-	Redis  RedisConfig
-	Jwt    JwtConfig
+	Server  ServerConfig
+	MySql   MySqlConfig
+	Redis   RedisConfig
+	Jwt     JwtConfig
+	Logging Logging
 }
 
 // ServerConfig holds server related configuration
@@ -38,6 +40,13 @@ type RedisConfig struct {
 
 type JwtConfig struct {
 	Secret string
+}
+
+type Logging struct {
+	Level          string
+	Type           string
+	LogFileEnabled bool
+	LogFilePath    string
 }
 
 // LoadConfig loads configuration from environment variables
@@ -65,7 +74,14 @@ func LoadConfig() {
 		Jwt: JwtConfig{
 			Secret: getEnv("JWT_SECRET_KEY", "secret"),
 		},
+		Logging: Logging{
+			Level:       getEnv("LOG_LEVEL", "debug"),
+			Type:        getEnv("LOG_TYPE", "json"),
+			LogFilePath: getEnv("LOG_FILE_PATH", "logs/app.log"),
+		},
 	}
+
+	AppConfig.Logging.LogFileEnabled, _ = strconv.ParseBool(getEnv("LOG_FILE_ENABLED", "true"))
 }
 
 // Helper function to get environment variable with a default value
