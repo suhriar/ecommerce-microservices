@@ -1,0 +1,7 @@
+{"level":"info","time":"2025-03-23T14:26:11.716364+07:00","message":"Server running on port 8001"}
+{"level":"error","time":"2025-03-23T14:26:21.835581+07:00","message":"Error reading message: fetching message: [15] Group Coordinator Not Available: the broker returns this error code for group coordinator requests, offset commits, and most group management requests if the offsets topic has not yet been created, or if the group coordinator is not active"}
+{"level":"error","time":"2025-03-23T14:26:36.877676+07:00","message":"Error reading message: fetching message: [15] Group Coordinator Not Available: the broker returns this error code for group coordinator requests, offset commits, and most group management requests if the offsets topic has not yet been created, or if the group coordinator is not active"}
+{"level":"warn","time":"2025-03-23T14:26:37.72631+07:00","message":"system call:interrupt"}
+{"level":"warn","time":"2025-03-23T14:26:37.726429+07:00","message":"shutting down http server"}
+{"level":"warn","time":"2025-03-23T14:26:37.726453+07:00","message":"Shutting down HTTP server..."}
+{"level":"info","time":"2025-03-23T14:26:37.72658+07:00","message":"Server shut down successfully"}

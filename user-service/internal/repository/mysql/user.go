@@ -13,15 +13,15 @@ type UserRepository interface {
 	GetUserByEmail(ctx context.Context, email string) (user domain.User, err error)
 }
 
-type userRepositoryImpl struct {
+type userRepository struct {
 	db *sql.DB
 }
 
 func NewUserRepository(db *sql.DB) UserRepository {
-	return &userRepositoryImpl{db}
+	return &userRepository{db}
 }
 
-func (r *userRepositoryImpl) GetUserByID(ctx context.Context, id int) (user domain.User, err error) {
+func (r *userRepository) GetUserByID(ctx context.Context, id int) (user domain.User, err error) {
 	query := `SELECT id, username, email, password FROM users WHERE id = ?`
 	err = r.db.QueryRowContext(ctx, query, id).Scan(&user.ID, &user.Username, &user.Email, &user.Password)
 	if err != nil {
@@ -31,7 +31,7 @@ func (r *userRepositoryImpl) GetUserByID(ctx context.Context, id int) (user doma
 	return user, nil
 }
 
-func (r *userRepositoryImpl) CreateUser(ctx context.Context, req domain.User) (user domain.User, err error) {
+func (r *userRepository) CreateUser(ctx context.Context, req domain.User) (user domain.User, err error) {
 	query := `INSERT INTO users (username, email, password) VALUES (?, ?, ?)`
 	res, err := r.db.ExecContext(ctx, query, req.Username, req.Email, req.Password)
 	if err != nil {
@@ -53,7 +53,7 @@ func (r *userRepositoryImpl) CreateUser(ctx context.Context, req domain.User) (u
 	return user, nil
 }
 
-func (r *userRepositoryImpl) GetUserByEmail(ctx context.Context, email string) (user domain.User, err error) {
+func (r *userRepository) GetUserByEmail(ctx context.Context, email string) (user domain.User, err error) {
 	query := `SELECT id, username, email, password FROM users WHERE email = ?`
 	err = r.db.QueryRowContext(ctx, query, email).Scan(&user.ID, &user.Username, &user.Email, &user.Password)
 	if err != nil {

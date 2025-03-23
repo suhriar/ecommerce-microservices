@@ -9,49 +9,43 @@ import (
 	"time"
 
 	"github.com/go-redis/redis/v8"
-	"gorm.io/gorm/logger"
 )
 
 type ProductCache interface {
+	GetProductByID(ctx context.Context, productID int) (product domain.Product, err error)
+	SetProduct(ctx context.Context, product domain.Product, expiration time.Duration) (err error)
 }
 
-type productCacheImpl struct {
+type productCache struct {
 	rdb *redis.Client
 }
 
 func NewProductCache(rdb *redis.Client) ProductCache {
-	return &productCacheImpl{rdb}
+	return &productCache{rdb}
 }
 
-func (r *productCacheImpl) GetProductByID(ctx context.Context, productID int) (product domain.Product, err error) {
+func (r *productCache) GetProductByID(ctx context.Context, productID int) (product domain.Product, err error) {
 	key := fmt.Sprintf("product:%d", productID)
-	productCache, err := p.cache.Get(ctx, key).Result()
+	productCache, err := r.rdb.Get(ctx, key).Result()
 	if err != nil {
 		if errors.Is(err, redis.Nil) {
-			logger.Warn().Msgf("Stock for product %d not found in cache", productID)
+			return product, nil
 		} else {
-			logger.Error().Err(err).Msgf("Error getting stock for product %d from cache", productID)
-			return 0, err
+			return product, err
 		}
 	}
 
-	if productCache != "" {
-		var product domain.Product
-		err = json.Unmarshal([]byte(productCache), &product)
-		if err != nil {
-			logger.Error().Err(err).Msgf("Error unmarshalling product %d", productID)
-			return 0, err
-		}
-
-		logger.Info().Msgf("Retrieved stock for product %d: %d", productID, product.Stock)
-		return product.Stock, nil
+	err = json.Unmarshal([]byte(productCache), &product)
+	if err != nil {
+		return product, err
 	}
 
-	return
+	return product, nil
 }
 
-func (r *productCacheImpl) SetUserTokenByEmail(ctx context.Context, email, token string, expiration time.Duration) (err error) {
-	err = r.rdb.Set(ctx, email, token, expiration).Err() // Set expiration to 24 hours
+func (r *productCache) SetProduct(ctx context.Context, product domain.Product, expiration time.Duration) (err error) {
+	key := fmt.Sprintf("product:%d", product.ID)
+	err = r.rdb.Set(ctx, key, product, 0).Err()
 	if err != nil {
 		return err
 	}

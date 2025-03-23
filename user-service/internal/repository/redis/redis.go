@@ -14,15 +14,15 @@ type UserCache interface {
 	SetUserTokenByEmail(ctx context.Context, email, token string, expiration time.Duration) (err error)
 }
 
-type userCacheImpl struct {
+type userCache struct {
 	rdb *redis.Client
 }
 
 func NewUserCache(rdb *redis.Client) UserCache {
-	return &userCacheImpl{rdb}
+	return &userCache{rdb}
 }
 
-func (r *userCacheImpl) GetUserTokenByEmail(ctx context.Context, email string) (token string, err error) {
+func (r *userCache) GetUserTokenByEmail(ctx context.Context, email string) (token string, err error) {
 	token, err = r.rdb.Get(ctx, email).Result()
 	if err != nil {
 		if errors.Is(err, redis.Nil) {
@@ -34,7 +34,7 @@ func (r *userCacheImpl) GetUserTokenByEmail(ctx context.Context, email string) (
 	return
 }
 
-func (r *userCacheImpl) SetUserTokenByEmail(ctx context.Context, email, token string, expiration time.Duration) (err error) {
+func (r *userCache) SetUserTokenByEmail(ctx context.Context, email, token string, expiration time.Duration) (err error) {
 	err = r.rdb.Set(ctx, email, token, expiration).Err() // Set expiration to 24 hours
 	if err != nil {
 		return err

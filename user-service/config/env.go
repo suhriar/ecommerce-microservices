@@ -12,19 +12,17 @@ var AppConfig *Config
 
 // Config holds all configuration for the application
 type Config struct {
-	Server  ServerConfig
-	MySql   MySqlConfig
-	Redis   RedisConfig
-	Jwt     JwtConfig
-	Logging Logging
+	Server ServerConfig
+	MySql  MySqlConfig
+	Redis  RedisConfig
+	Jwt    JwtConfig
+	Log    LogConfig
 }
 
-// ServerConfig holds server related configuration
 type ServerConfig struct {
 	Port string
 }
 
-// DatabaseConfig holds database related configuration
 type MySqlConfig struct {
 	Host     string
 	Port     string
@@ -42,7 +40,7 @@ type JwtConfig struct {
 	Secret string
 }
 
-type Logging struct {
+type LogConfig struct {
 	Level          string
 	Type           string
 	LogFileEnabled bool
@@ -58,7 +56,7 @@ func LoadConfig() {
 
 	AppConfig = &Config{
 		Server: ServerConfig{
-			Port: getEnv("PORT", "8080"),
+			Port: getEnv("PORT", "8000"),
 		},
 		MySql: MySqlConfig{
 			Host:     getEnv("DB_HOST", "localhost"),
@@ -74,14 +72,14 @@ func LoadConfig() {
 		Jwt: JwtConfig{
 			Secret: getEnv("JWT_SECRET_KEY", "secret"),
 		},
-		Logging: Logging{
+		Log: LogConfig{
 			Level:       getEnv("LOG_LEVEL", "debug"),
 			Type:        getEnv("LOG_TYPE", "json"),
 			LogFilePath: getEnv("LOG_FILE_PATH", "logs/app.log"),
 		},
 	}
 
-	AppConfig.Logging.LogFileEnabled, _ = strconv.ParseBool(getEnv("LOG_FILE_ENABLED", "true"))
+	AppConfig.Log.LogFileEnabled, _ = strconv.ParseBool(getEnv("LOG_FILE_ENABLED", "true"))
 }
 
 // Helper function to get environment variable with a default value

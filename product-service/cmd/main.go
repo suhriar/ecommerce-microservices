@@ -1,8 +1,8 @@
 package main
 
 import (
+	"context"
 	"fmt"
-	"log"
 	"net/http"
 	"os"
 	"os/signal"
@@ -13,60 +13,80 @@ import (
 	"product-service/config"
 	"product-service/config/cache"
 	"product-service/config/database"
+	"product-service/pkg/logger"
 
 	"github.com/gorilla/mux"
+	"github.com/rs/zerolog/log"
 )
 
 func main() {
+	// Create context for graceful shutdown
+	ctx, cancel := context.WithCancel(context.Background())
+	defer cancel()
+
+	// Catch system signals for shutdown
+	ch := make(chan os.Signal, 1)
+	signal.Notify(ch, os.Interrupt, syscall.SIGTERM)
+
+	go func() {
+		oscall := <-ch
+		log.Warn().Msgf("system call:%+v", oscall)
+		cancel()
+	}()
+
 	// Load environment variables
-	conf := config.LoadConfig()
+	config.LoadConfig()
+
+	// Initialize Logging
+	logger.InitializeLogger(config.AppConfig)
 
 	// Initialize DB
-	db, err := database.NewMySQLConnection(conf)
+	db, err := database.NewMySQLConnection(config.AppConfig)
 	if err != nil {
-		log.Fatalf("Failed to connect to database: %v", err)
+		log.Fatal().Err(err).Msg(fmt.Sprintf("Failed to connect to database: %v", err))
 	}
 	defer db.Close()
 
 	// Initialize DB
-	rdb, err := cache.NewRedisClient(conf)
+	rdb, err := cache.NewRedisClient(config.AppConfig)
 	if err != nil {
-		log.Fatalf("Failed to connect to redis: %v", err)
+		log.Fatal().Err(err).Msg(fmt.Sprintf("Failed to connect to redis: %v", err))
 	}
 	defer db.Close()
 
 	// Router setup
 	router := mux.NewRouter()
-	// API Routes
-	apiRouter := router.PathPrefix("/api").Subrouter()
-	app.NewApp(apiRouter, db, rdb)
+
+	app.NewApp(router, db, rdb)
 
 	// Start server
 	server := &http.Server{
-		Addr:         fmt.Sprintf(":%s", getEnv("PORT", "8080")),
-		Handler:      apiRouter,
+		Addr:         fmt.Sprintf(":%s", config.AppConfig.Server.Port),
+		Handler:      router,
 		ReadTimeout:  10 * time.Second,
 		WriteTimeout: 10 * time.Second,
 	}
 
 	// Server in a goroutine
 	go func() {
-		log.Printf("Server running on port %s\n", getEnv("PORT", "8080"))
+		log.Info().Msg(fmt.Sprintf("Server running on port %s", config.AppConfig.Server.Port))
 		if err := server.ListenAndServe(); err != nil && err != http.ErrServerClosed {
-			log.Fatalf("Could not listen on %s: %v\n", getEnv("PORT", "8080"), err)
+			log.Fatal().Err(err).Msg(fmt.Sprintf("Could not listen on %s: %v", config.AppConfig.Server.Port, err))
 		}
 	}()
 
-	// Graceful shutdown
-	quit := make(chan os.Signal, 1)
-	signal.Notify(quit, syscall.SIGINT, syscall.SIGTERM)
-	<-quit
-	log.Println("Server is shutting down...")
-}
+	<-ctx.Done()
 
-func getEnv(key, fallback string) string {
-	if value, exists := os.LookupEnv(key); exists {
-		return value
+	// Graceful Shutdown
+	gracefulShutdownPeriod := 30 * time.Second
+	log.Warn().Msg("shutting down http server")
+	shutdownCtx, cancel := context.WithTimeout(context.Background(), gracefulShutdownPeriod)
+	defer cancel()
+
+	log.Warn().Msg("Shutting down HTTP server...")
+	if err := server.Shutdown(shutdownCtx); err != nil {
+		log.Error().Err(err).Msg("Failed to shutdown HTTP server gracefully")
 	}
-	return fallback
+
+	log.Info().Msg("Server shut down successfully")
 }

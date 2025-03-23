@@ -6,3 +6,8 @@
 {"level":"info","time":"2025-03-23T06:51:29.340204+07:00","message":"Server shut down successfully"}
 {"level":"info","time":"2025-03-23T06:52:56.097619+07:00","message":"Server running on port 8080"}
 {"level":"info","request_id":"54a40088-bcad-4cd9-b2fb-478b186200d8","method":"POST","path":"/api/users/login","remote_addr":"[::1]:63896","user_agent":"PostmanRuntime/7.43.0","status":200,"duration_ms":155.119292,"time":"2025-03-23T06:54:46.736927+07:00","message":"request completed"}
+{"level":"info","request_id":"a4a427ac-28d9-46d9-95e8-c22dc2ef207d","method":"GET","path":"/api/users/1","remote_addr":"[::1]:65275","user_agent":"PostmanRuntime/7.43.0","status":200,"duration_ms":48.979417,"time":"2025-03-23T13:39:28.256199+07:00","message":"request completed"}
+{"level":"warn","time":"2025-03-23T14:32:30.934569+07:00","message":"system call:interrupt"}
+{"level":"warn","time":"2025-03-23T14:32:30.935671+07:00","message":"shutting down http server"}
+{"level":"warn","time":"2025-03-23T14:32:30.935879+07:00","message":"Shutting down HTTP server..."}
+{"level":"info","time":"2025-03-23T14:32:30.93627+07:00","message":"Server shut down successfully"}

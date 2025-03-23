@@ -3,23 +3,26 @@ package config
 import (
 	"log"
 	"os"
+	"strconv"
 
 	"github.com/joho/godotenv"
 )
+
+var AppConfig *Config
 
 // Config holds all configuration for the application
 type Config struct {
 	Server ServerConfig
 	MySql  MySqlConfig
 	Redis  RedisConfig
+	Jwt    JwtConfig
+	Log    LogConfig
 }
 
-// ServerConfig holds server related configuration
 type ServerConfig struct {
 	Port string
 }
 
-// DatabaseConfig holds database related configuration
 type MySqlConfig struct {
 	Host     string
 	Port     string
@@ -33,16 +36,27 @@ type RedisConfig struct {
 	Port string
 }
 
+type JwtConfig struct {
+	Secret string
+}
+
+type LogConfig struct {
+	Level          string
+	Type           string
+	LogFileEnabled bool
+	LogFilePath    string
+}
+
 // LoadConfig loads configuration from environment variables
-func LoadConfig() *Config {
+func LoadConfig() {
 	// Load .env file if it exists
 	if err := godotenv.Load(); err != nil {
 		log.Println("Warning: .env file not found")
 	}
 
-	return &Config{
+	AppConfig = &Config{
 		Server: ServerConfig{
-			Port: getEnv("PORT", "8080"),
+			Port: getEnv("PORT", "8001"),
 		},
 		MySql: MySqlConfig{
 			Host:     getEnv("DB_HOST", "localhost"),
@@ -55,7 +69,18 @@ func LoadConfig() *Config {
 			Host: getEnv("REDIS_HOST", "localhost"),
 			Port: getEnv("REDIS_PORT", "6379"),
 		},
+		Jwt: JwtConfig{
+			Secret: getEnv("JWT_SECRET_KEY", "secret"),
+		},
+		Log: LogConfig{
+			Level:       getEnv("LOG_LEVEL", "debug"),
+			Type:        getEnv("LOG_TYPE", "json"),
+			LogFilePath: getEnv("LOG_FILE_PATH", "logs/app.log"),
+		},
 	}
+
+	AppConfig.Log.LogFileEnabled, _ = strconv.ParseBool(getEnv("LOG_FILE_ENABLED", "true"))
+
 }
 
 // Helper function to get environment variable with a default value
