@@ -18,7 +18,7 @@ func NewApp(router *mux.Router, dbShards []*sql.DB, rdb *redis.Client, kafkaWrit
 	orderShard := shard.NewShardRouter(len(dbShards))
 	orderRepo := repo.NewOrderRepository(dbShards, orderShard)
 	orderCache := cache.NewOrderCache(rdb)
-	orderUsecase := usecase.NewOrderUsecase(orderRepo, orderCache, kafkaWriter, "http://localhost:8081", "http://localhost:8083")
+	orderUsecase := usecase.NewOrderUsecase(orderRepo, orderCache, kafkaWriter, "http://localhost:8001", "http://localhost:8003")
 
 	orderHandler := rest.NewOrderHandler(orderUsecase)
 

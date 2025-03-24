@@ -44,8 +44,13 @@ func (r *productCache) GetProductByID(ctx context.Context, productID int) (produ
 }
 
 func (r *productCache) SetProduct(ctx context.Context, product domain.Product, expiration time.Duration) (err error) {
+	productByte, err := json.Marshal(product)
+	if err != nil {
+		return err
+	}
+
 	key := fmt.Sprintf("product:%d", product.ID)
-	err = r.rdb.Set(ctx, key, product, 0).Err()
+	err = r.rdb.Set(ctx, key, productByte, 0).Err()
 	if err != nil {
 		return err
 	}

@@ -33,10 +33,10 @@ func registerProductRoutes(router *mux.Router, handler *ProductHandler, jwtMiddl
 	// Protected routes
 	protected := productRouter.PathPrefix("").Subrouter()
 	protected.Use(jwtMiddleware.RequireAuth)
-	protected.HandleFunc("/products/{id:[0-9]+}/stock", handler.GetProductStock).Methods("GET")
-	protected.HandleFunc("/products/reserve", handler.ReserveProductStock).Methods("POST")
-	protected.HandleFunc("/products/release", handler.ReleaseProductStock).Methods("POST")
-	protected.HandleFunc("/products/warmup-cache", handler.PreWarmupCache).Methods("GET")
+	protected.HandleFunc("/{id:[0-9]+}/stock", handler.GetProductStock).Methods("GET")
+	protected.HandleFunc("/reserve", handler.ReserveProductStock).Methods("POST")
+	protected.HandleFunc("/release", handler.ReleaseProductStock).Methods("POST")
+	protected.HandleFunc("/warmup-cache", handler.PreWarmupCache).Methods("GET")
 
 }
 

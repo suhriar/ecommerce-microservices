@@ -20,11 +20,12 @@ func NewOrderHandler(orderUsecase usecase.OrderUsecase) *OrderHandler {
 }
 
 func (h *OrderHandler) CreateOrder(w http.ResponseWriter, r *http.Request) {
-	order := domain.Order{}
+	order := domain.OrderRequest{}
 	if err := json.NewDecoder(r.Body).Decode(&order); err != nil {
 		utils.RespondWithJSON(w, http.StatusBadRequest, map[string]string{"error": "Invalid request payload"})
 		return
 	}
+
 	order.IdempotentKey = r.Header.Get("Idempotent-Key")
 
 	createdOrder, err := h.orderUsecase.CreateOrder(r.Context(), order)

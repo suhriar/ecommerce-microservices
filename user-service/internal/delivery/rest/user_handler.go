@@ -7,7 +7,6 @@ import (
 	"strings"
 
 	"user-service/domain"
-	"user-service/internal/delivery/middleware"
 	"user-service/internal/usecase"
 	"user-service/pkg/utils"
 
@@ -88,7 +87,7 @@ func (h *UserHandler) ValidateSession(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	user, err := middleware.GetUserFromContext(r.Context())
+	user, err := utils.GetUserFromContext(r.Context())
 	if err != nil {
 		utils.RespondWithJSON(w, http.StatusUnauthorized, map[string]string{"error": "Unauthorized"})
 		return

@@ -27,6 +27,20 @@ services:
     volumes:
       - kafka-data:/var/lib/kafka/data
 
+  kafka-ui-web:
+    image: provectuslabs/kafka-ui
+    container_name: kafka-ui-web-fc
+    depends_on:
+      - kafka
+    ports:
+      - "8080:8080"
+    restart: "no"
+    environment:
+      - KAFKA_CLUSTERS_0_NAME=new-cluster
+      - KAFKA_CLUSTERS_0_BOOTSTRAPSERVERS=kafka1:19092
+      - KAFKA_CLUSTERS_0_ZOOKEEPER=zookeeper1:2181
+      - KAFKA_CLUSTERS_0_READONLY=false
+
   mariadb:
     image: mariadb:10.5.8
     container_name: mariadb
@@ -45,6 +59,7 @@ services:
       - "6379:6379"
     volumes:
       - redis-data:/data
+
   db1:
     image: mysql:8.0
     environment:

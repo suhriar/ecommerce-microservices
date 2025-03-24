@@ -32,9 +32,9 @@ func registerOrderRoutes(router *mux.Router, handler *OrderHandler, jwtMiddlewar
 	// Protected routes
 	protected := orderRouter.PathPrefix("").Subrouter()
 	protected.Use(jwtMiddleware.RequireAuth)
-	protected.HandleFunc("/orders", handler.CreateOrder).Methods("POST")
-	protected.HandleFunc("/orders", handler.UpdateOrder).Methods("PUT")
-	protected.HandleFunc("/orders/{id:[0-9]+}", handler.CancelOrder).Methods("DELETE")
+	protected.HandleFunc("", handler.CreateOrder).Methods("POST")
+	protected.HandleFunc("", handler.UpdateOrder).Methods("PUT")
+	protected.HandleFunc("/{id:[0-9]+}", handler.CancelOrder).Methods("DELETE")
 }
 
 // HealthCheck handler for the health endpoint

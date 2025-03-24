@@ -11,3 +11,9 @@
 {"level":"warn","time":"2025-03-23T14:32:30.935671+07:00","message":"shutting down http server"}
 {"level":"warn","time":"2025-03-23T14:32:30.935879+07:00","message":"Shutting down HTTP server..."}
 {"level":"info","time":"2025-03-23T14:32:30.93627+07:00","message":"Server shut down successfully"}
+{"level":"info","time":"2025-03-24T11:31:25.637929+07:00","message":"Server running on port 8000"}
+{"level":"info","request_id":"1f38df94-f210-40df-9bd5-d502612a7f7e","method":"POST","path":"/api/users/login","remote_addr":"[::1]:61214","user_agent":"PostmanRuntime/7.43.0","status":200,"duration_ms":136.331458,"time":"2025-03-24T11:31:36.418388+07:00","message":"request completed"}
+{"level":"warn","time":"2025-03-24T11:38:42.610522+07:00","message":"system call:interrupt"}
+{"level":"warn","time":"2025-03-24T11:38:42.611518+07:00","message":"shutting down http server"}
+{"level":"warn","time":"2025-03-24T11:38:42.611609+07:00","message":"Shutting down HTTP server..."}
+{"level":"info","time":"2025-03-24T11:38:42.611895+07:00","message":"Server shut down successfully"}

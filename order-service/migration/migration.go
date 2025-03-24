@@ -1,4 +1,4 @@
-package migrations
+package migration
 
 import (
 	"database/sql"
@@ -7,7 +7,7 @@ import (
 )
 
 // AutoMigrateOrders creates the orders table if it does not exist and sets AUTO_INCREMENT for sharding.
-func AutoMigrateOrders(retries int, shardIndex int, dbs ...*sql.DB) error {
+func AutoMigrateOrders(retries int, dbs ...*sql.DB) error {
 	query := `
 		CREATE TABLE IF NOT EXISTS orders (
 			id INT AUTO_INCREMENT PRIMARY KEY,
@@ -20,9 +20,8 @@ func AutoMigrateOrders(retries int, shardIndex int, dbs ...*sql.DB) error {
 			idempotent_key VARCHAR(255) UNIQUE NOT NULL
 		);
 	`
-	autoIncrementQuery := fmt.Sprintf("ALTER TABLE orders AUTO_INCREMENT = %d;", (shardIndex+1)*1000001)
 
-	for _, db := range dbs {
+	for shardIndex, db := range dbs {
 		_, err := db.Exec(query)
 		if err != nil {
 			// Retry jika gagal
@@ -36,6 +35,7 @@ func AutoMigrateOrders(retries int, shardIndex int, dbs ...*sql.DB) error {
 		}
 
 		// Atur AUTO_INCREMENT
+		autoIncrementQuery := fmt.Sprintf("ALTER TABLE orders AUTO_INCREMENT = %d;", (shardIndex+1)*1000001)
 		_, err = db.Exec(autoIncrementQuery)
 		if err != nil {
 			fmt.Println("Error setting AUTO_INCREMENT for orders:", err)
@@ -45,7 +45,7 @@ func AutoMigrateOrders(retries int, shardIndex int, dbs ...*sql.DB) error {
 }
 
 // AutoMigrateProductRequests creates the product_requests table if it does not exist and sets AUTO_INCREMENT for sharding.
-func AutoMigrateProductRequests(retries int, shardIndex int, dbs ...*sql.DB) error {
+func AutoMigrateProductRequests(retries int, dbs ...*sql.DB) error {
 	query := `
 		CREATE TABLE IF NOT EXISTS product_requests (
 			id INT AUTO_INCREMENT PRIMARY KEY,
@@ -58,9 +58,7 @@ func AutoMigrateProductRequests(retries int, shardIndex int, dbs ...*sql.DB) err
 			FOREIGN KEY (order_id) REFERENCES orders(id) ON DELETE CASCADE
 		);
 	`
-	autoIncrementQuery := fmt.Sprintf("ALTER TABLE product_requests AUTO_INCREMENT = %d;", (shardIndex+1)*1000001)
-
-	for _, db := range dbs {
+	for shardIndex, db := range dbs {
 		_, err := db.Exec(query)
 		if err != nil {
 			// Retry jika gagal
@@ -74,6 +72,7 @@ func AutoMigrateProductRequests(retries int, shardIndex int, dbs ...*sql.DB) err
 		}
 
 		// Atur AUTO_INCREMENT
+		autoIncrementQuery := fmt.Sprintf("ALTER TABLE product_requests AUTO_INCREMENT = %d;", (shardIndex+1)*1000001)
 		_, err = db.Exec(autoIncrementQuery)
 		if err != nil {
 			fmt.Println("Error setting AUTO_INCREMENT for product_requests:", err)

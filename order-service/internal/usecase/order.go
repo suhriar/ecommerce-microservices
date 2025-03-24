@@ -3,22 +3,21 @@ package usecase
 import (
 	"context"
 	"encoding/json"
-	"errors"
 	"fmt"
 	"net/http"
-	"os"
 	"time"
 
 	"order-service/domain"
 	repo "order-service/internal/repository/mysql"
 	cache "order-service/internal/repository/redis"
+	"order-service/pkg/utils"
 
 	"github.com/rs/zerolog/log"
 	"github.com/segmentio/kafka-go"
 )
 
 type OrderUsecase interface {
-	CreateOrder(ctx context.Context, req domain.Order) (order domain.Order, err error)
+	CreateOrder(ctx context.Context, req domain.OrderRequest) (order domain.Order, err error)
 	UpdateOrder(ctx context.Context, req domain.Order) (updateOrder domain.Order, err error)
 	CancelOrder(ctx context.Context, id int) (updatedOrder domain.Order, err error)
 	checkProductStock(ctx context.Context, productId int, quantity int) (avail bool, err error)
@@ -37,28 +36,35 @@ func NewOrderUsecase(repo repo.OrderRepository, cache cache.OrderCache, kafkaWri
 		repo:              repo,
 		cache:             cache,
 		kafkaWriter:       kafkaWriter,
-		productServiceURL: pricingServiceURL,
+		productServiceURL: productServiceURL,
 		pricingServiceURL: pricingServiceURL,
 	}
 }
 
-func (u *orderUsecase) CreateOrder(ctx context.Context, req domain.Order) (order domain.Order, err error) {
+func (u *orderUsecase) CreateOrder(ctx context.Context, req domain.OrderRequest) (createdOrder domain.Order, err error) {
 
 	// get the idempotent key from order
-	validate, err := u.validateIdempotentKey(ctx, req.IdempotentKey)
+	// validate, err := u.validateIdempotentKey(ctx, req.IdempotentKey)
+	// if err != nil {
+	// 	return order, err
+	// }
+
+	// if !validate {
+	// 	return order, errors.New("idempotent key already exists")
+	// }
+
+	user, err := utils.GetUserFromContext(ctx)
 	if err != nil {
-		return order, err
+		return createdOrder, err
 	}
 
-	if !validate {
-		return order, errors.New("idempotent key already exists")
-	}
+	var orderReq domain.Order
 
 	availabilityCh := make(chan struct {
 		ProductID int
 		Available bool
 		Error     error
-	}, len(order.ProductRequests))
+	}, len(req.ProductRequests))
 
 	pricingCh := make(chan struct {
 		ProductID  int
@@ -66,18 +72,18 @@ func (u *orderUsecase) CreateOrder(ctx context.Context, req domain.Order) (order
 		MarkUp     float64
 		Discount   float64
 		Error      error
-	}, len(order.ProductRequests))
+	}, len(req.ProductRequests))
 
-	for _, productRequest := range order.ProductRequests {
+	for _, productRequest := range req.ProductRequests {
 		//// check product availability
-		//available, err := s.checkProductStock(productRequest.ProductID, productRequest.Quantity)
+		//available, err := u.checkProductStock(productRequest.ProductID, productRequest.Quantity)
 		//if err != nil {
 		//	log.Error().Err(err).Msgf("Error checking product stock for product %d", productRequest.ProductID)
 		//	return nil, err
 		//}
 		//
 		//// get pricing
-		//pricing, err := s.getPricing(productRequest.ProductID)
+		//pricing, err := u.getPricing(productRequest.ProductID)
 		//if err != nil {
 		//	log.Error().Err(err).Msgf("Error getting pricing for product %d", productRequest.ProductID)
 		//	return nil, err
@@ -92,8 +98,8 @@ func (u *orderUsecase) CreateOrder(ctx context.Context, req domain.Order) (order
 		//productRequest.MarkUp = float64(productRequest.Quantity) * pricing.Markup
 		//productRequest.Discount = float64(productRequest.Quantity) * pricing.Discount
 
-		go func(productRequest *domain.ProductRequest) {
-			available, err := u.checkProductStock(ctx, productRequest.ProductID, productRequest.Quantity)
+		go func(productID, quantity int) {
+			available, err := u.checkProductStock(ctx, productID, quantity)
 			availabilityCh <- struct {
 				ProductID int
 				Available bool
@@ -103,10 +109,11 @@ func (u *orderUsecase) CreateOrder(ctx context.Context, req domain.Order) (order
 				Available: available,
 				Error:     err,
 			}
-		}(&productRequest)
+			fmt.Println(availabilityCh)
+		}(productRequest.ProductID, productRequest.Quantity)
 
-		go func(productRequest *domain.ProductRequest) {
-			pricing, err := u.getPricing(ctx, productRequest.ProductID)
+		go func(productID int) {
+			pricing, err := u.getPricing(ctx, productID)
 			pricingCh <- struct {
 				ProductID  int
 				FinalPrice float64
@@ -120,55 +127,61 @@ func (u *orderUsecase) CreateOrder(ctx context.Context, req domain.Order) (order
 				Discount:   pricing.Discount,
 				Error:      err,
 			}
-		}(&productRequest)
+		}(productRequest.ProductID)
 	}
 
-	for range order.ProductRequests {
+	for range req.ProductRequests {
 		availabilityResult := <-availabilityCh
 		pricingResult := <-pricingCh
 
 		if availabilityResult.Error != nil {
 			log.Error().Err(availabilityResult.Error).Msgf("Error checking product stock for product %d", availabilityResult.ProductID)
-			return order, availabilityResult.Error
+			return createdOrder, availabilityResult.Error
 		}
 
 		if !availabilityResult.Available {
 			log.Warn().Msgf("Product %d out of stock", availabilityResult.ProductID)
-			return order, fmt.Errorf("product out of stock")
+			return createdOrder, fmt.Errorf("product out of stock")
 		}
 
 		if pricingResult.Error != nil {
 			log.Error().Err(pricingResult.Error).Msgf("Error getting pricing for product %d", pricingResult.ProductID)
-			return order, pricingResult.Error
+			return createdOrder, pricingResult.Error
 		}
 
-		for _, productRequest := range order.ProductRequests {
+		for _, productRequest := range req.ProductRequests {
 			if productRequest.ProductID == availabilityResult.ProductID {
-				productRequest.FinalPrice = float64(productRequest.Quantity) * pricingResult.FinalPrice
-				productRequest.MarkUp = float64(productRequest.Quantity) * pricingResult.MarkUp
-				productRequest.Discount = float64(productRequest.Quantity) * pricingResult.Discount
+				productRequestReq := domain.ProductRequest{}
+				productRequestReq.ProductID = productRequest.ProductID
+				productRequestReq.Quantity = productRequest.Quantity
+				productRequestReq.FinalPrice = float64(productRequest.Quantity) * pricingResult.FinalPrice
+				productRequestReq.MarkUp = float64(productRequest.Quantity) * pricingResult.MarkUp
+				productRequestReq.Discount = float64(productRequest.Quantity) * pricingResult.Discount
+				orderReq.ProductRequests = append(orderReq.ProductRequests, productRequestReq)
 			}
 		}
 	}
 
-	order.Total = 0
-	for _, productRequest := range order.ProductRequests {
-		order.Total += productRequest.FinalPrice
+	orderReq.UserID = user.ID
+	orderReq.Total = 0
+	orderReq.Status = "created"
+	orderReq.IdempotentKey = req.IdempotentKey
+	for _, productRequest := range orderReq.ProductRequests {
+		orderReq.TotalDiscount += productRequest.Discount
+		orderReq.TotalMarkUp += productRequest.MarkUp
+		orderReq.Total += productRequest.FinalPrice
+		orderReq.Quantity += productRequest.Quantity
 	}
 
-	createdOrder, err := u.repo.CreateOrder(ctx, order)
+	createdOrder, err = u.repo.CreateOrder(ctx, orderReq)
 	if err != nil {
 		log.Error().Err(err).Msg("Error creating order")
-		return order, err
+		return createdOrder, err
 	}
 
-	// if env is set to test, return
-	if os.Getenv("ENV") == "test" {
-		return createdOrder, nil
-	}
 	err = u.publishOrderEvent(ctx, &createdOrder, "created")
 	if err != nil {
-		return order, err
+		return createdOrder, err
 	}
 
 	return createdOrder, nil
@@ -230,10 +243,17 @@ func (u *orderUsecase) CancelOrder(ctx context.Context, id int) (updatedOrder do
 }
 
 func (u *orderUsecase) checkProductStock(ctx context.Context, productId int, quantity int) (avail bool, err error) {
-	req, err := http.NewRequestWithContext(ctx, http.MethodGet, fmt.Sprintf("%s/products/%d/stock", u.productServiceURL, productId), nil)
+	req, err := http.NewRequestWithContext(ctx, http.MethodGet, fmt.Sprintf("%s/api/products/%d/stock", u.productServiceURL, productId), nil)
 	if err != nil {
 		return false, err
 	}
+
+	token, ok := ctx.Value(domain.AuthorizationKey).(string)
+	if !ok {
+		return false, fmt.Errorf("unauthorized: token not found")
+	}
+
+	req.Header.Set("Authorization", "Bearer "+token)
 
 	resp, err := http.DefaultClient.Do(req)
 	if err != nil {

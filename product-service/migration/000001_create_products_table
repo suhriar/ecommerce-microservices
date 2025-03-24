@@ -1,0 +1,20 @@
+CREATE TABLE `products` (
+  `id` int(11) NOT NULL AUTO_INCREMENT,
+  `name` varchar(255) NOT NULL,
+  `description` text NOT NULL,
+  `price` double NOT NULL,
+  `stock` int(11) NOT NULL,
+  PRIMARY KEY (`id`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
+
+INSERT INTO `products` (`name`, `description`, `price`, `stock`) VALUES
+('Test Product 234', 'Lorem ipsum dolor sit amet.', 14500000, 10),
+('Test Product 867', 'Consectetur adipiscing elit.', 18500000, 12),
+('Test Product 543', 'Sed do eiusmod tempor incididunt.', 7500000, 20),
+('Test Product 321', 'Ut labore et dolore magna aliqua.', 4200000, 15),
+('Test Product 789', 'Duis aute irure dolor.', 1350000, 30),
+('Test Product 654', 'Excepteur sint occaecat.', 9500000, 8),
+('Test Product 111', 'Cupidatat non proident.', 2750000, 25),
+('Test Product 999', 'Sunt in culpa qui officia.', 850000, 50),
+('Test Product 432', 'Deserunt mollit anim id est.', 32000000, 5),
+('Test Product 876', 'Lorem ipsum dolor sit amet.', 17800000, 7);

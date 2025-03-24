@@ -3,6 +3,7 @@ package mysql
 import (
 	"context"
 	"database/sql"
+	"fmt"
 	"order-service/domain"
 	"order-service/internal/sharding"
 )
@@ -74,11 +75,12 @@ func (r *orderRepository) CreateOrder(ctx context.Context, req domain.Order) (or
 	if err != nil {
 		return order, err
 	}
-
+	fmt.Println(req.UserID)
 	// Insert order
 	orderQuery := `INSERT INTO orders (user_id, quantity, total, status, total_mark_up, total_discount, idempotent_key) VALUES (?, ?, ?, ?, ?, ?, ?)`
 	res, err := tx.ExecContext(ctx, orderQuery, req.UserID, req.Quantity, req.Total, req.Status, req.TotalMarkUp, req.TotalDiscount, req.IdempotentKey)
 	if err != nil {
+		fmt.Println(err)
 		tx.Rollback()
 		return order, err
 	}
@@ -116,9 +118,13 @@ func (r *orderRepository) CreateOrder(ctx context.Context, req domain.Order) (or
 	// Remove the trailing comma
 	productQuery = productQuery[:len(productQuery)-1]
 
+	fmt.Println(productQuery)
+	fmt.Println(orderID)
 	// Execute the query batch insert
 	_, err = tx.ExecContext(ctx, productQuery, values...)
 	if err != nil {
+		fmt.Println("vf")
+		fmt.Println(err)
 		tx.Rollback()
 		return order, err
 	}

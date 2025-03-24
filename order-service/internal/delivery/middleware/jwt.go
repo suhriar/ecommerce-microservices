@@ -2,24 +2,15 @@ package middleware
 
 import (
 	"context"
-	"errors"
 	"fmt"
 	"net/http"
+	"order-service/config"
+	"order-service/domain"
+	"order-service/pkg/utils"
 	"strings"
 	"time"
-	"user-service/config"
-	"user-service/pkg/utils"
 
 	"github.com/golang-jwt/jwt/v4"
-)
-
-// contextKey adalah tipe untuk key dalam context
-type contextKey string
-
-const (
-	UserIDlKey   contextKey = "user_id"
-	UserNameKey  contextKey = "username"
-	UserEmailKey contextKey = "email"
 )
 
 // JWTMiddleware adalah middleware untuk JWT authentication
@@ -39,12 +30,6 @@ type JwtCustomClaims struct {
 	Username string `json:"username"`
 	Email    string `json:"email"`
 	jwt.RegisteredClaims
-}
-
-type UserAuth struct {
-	ID       int    `json:"ud"`
-	Username string `json:"username"`
-	Email    string `json:"email"`
 }
 
 // Middleware mengecek JWT token untuk endpoint yang terproteksi
@@ -87,9 +72,10 @@ func (m *JWTMiddleware) Middleware(next http.Handler) http.Handler {
 		}
 
 		// Tambahkan data user ke context
-		ctx := context.WithValue(r.Context(), UserNameKey, claims.Username)
-		ctx = context.WithValue(ctx, UserEmailKey, claims.Email)
-		ctx = context.WithValue(ctx, UserIDlKey, claims.UserID)
+		ctx := context.WithValue(r.Context(), domain.UserNameKey, claims.Username)
+		ctx = context.WithValue(ctx, domain.UserEmailKey, claims.Email)
+		ctx = context.WithValue(ctx, domain.UserIDlKey, claims.UserID)
+		ctx = context.WithValue(ctx, domain.AuthorizationKey, token)
 
 		// Lanjutkan request dengan context yang telah diperbarui
 		next.ServeHTTP(w, r.WithContext(ctx))
@@ -99,21 +85,4 @@ func (m *JWTMiddleware) Middleware(next http.Handler) http.Handler {
 // RequireAuth adalah middleware yang memastikan user sudah terautentikasi
 func (m *JWTMiddleware) RequireAuth(next http.Handler) http.Handler {
 	return m.Middleware(next)
-}
-
-// GetUserFromContext mengambil username dan email dari context
-func GetUserFromContext(ctx context.Context) (user UserAuth, err error) {
-	username, ok1 := ctx.Value(UserNameKey).(string)
-	email, ok2 := ctx.Value(UserEmailKey).(string)
-	id, ok3 := ctx.Value(UserIDlKey).(int)
-
-	if !ok1 || !ok2 || !ok3 {
-		return user, errors.New("could not get user data from context")
-	}
-
-	user.ID = id
-	user.Username = username
-	user.Email = email
-
-	return user, nil
 }

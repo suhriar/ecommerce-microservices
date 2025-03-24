@@ -19,3 +19,11 @@ type ProductRequest struct {
 	Discount   float64 `json:"discount"`
 	FinalPrice float64 `json:"final_price"`
 }
+
+type OrderRequest struct {
+	ProductRequests []struct {
+		ProductID int `json:"product_id"`
+		Quantity  int `json:"quantity"`
+	}
+	IdempotentKey string `json:"-"`
+}

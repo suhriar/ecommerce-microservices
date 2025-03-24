@@ -64,7 +64,7 @@ func LoadConfig() {
 
 	AppConfig = &Config{
 		Server: ServerConfig{
-			Port: getEnv("PORT", "8001"),
+			Port: getEnv("PORT", "8002"),
 		},
 		MySql: MySqlConfig{
 			Host:     getEnv("DB_HOST", "localhost"),

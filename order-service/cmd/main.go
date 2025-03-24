@@ -14,6 +14,7 @@ import (
 	"order-service/config/cache"
 	"order-service/config/database"
 	"order-service/config/kafka"
+	"order-service/migration"
 	"order-service/pkg/logger"
 
 	"github.com/gorilla/mux"
@@ -48,6 +49,16 @@ func main() {
 	}
 	for _, db := range dbShard {
 		defer db.Close()
+	}
+
+	err = migration.AutoMigrateOrders(3, dbShard...)
+	if err != nil {
+		log.Fatal().Err(err).Msg(fmt.Sprintf("Failed to migrate orders table: %v", err))
+	}
+
+	err = migration.AutoMigrateProductRequests(3, dbShard...)
+	if err != nil {
+		log.Fatal().Err(err).Msg(fmt.Sprintf("Failed to migrate product_requests table: %v", err))
 	}
 
 	// Initialize DB
