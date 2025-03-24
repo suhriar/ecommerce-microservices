@@ -1,6 +1,7 @@
 package usecase
 
 import (
+	"bytes"
 	"context"
 	"encoding/json"
 	"fmt"
@@ -248,9 +249,9 @@ func (u *orderUsecase) checkProductStock(ctx context.Context, productId int, qua
 		return false, err
 	}
 
-	token, ok := ctx.Value(domain.AuthorizationKey).(string)
-	if !ok {
-		return false, fmt.Errorf("unauthorized: token not found")
+	token, err := utils.GetTokenFromContext(ctx)
+	if err != nil {
+		return
 	}
 
 	req.Header.Set("Authorization", "Bearer "+token)
@@ -276,10 +277,23 @@ func (u *orderUsecase) checkProductStock(ctx context.Context, productId int, qua
 }
 
 func (u *orderUsecase) getPricing(ctx context.Context, productId int) (pricing domain.Pricing, err error) {
-	req, err := http.NewRequestWithContext(ctx, http.MethodGet, fmt.Sprintf("%s/pricing/%d", u.pricingServiceURL, productId), nil)
+	payload, err := json.Marshal(map[string]int{"product_id": productId})
 	if err != nil {
 		return pricing, err
 	}
+
+	req, err := http.NewRequestWithContext(ctx, http.MethodPost, fmt.Sprintf("%s/pricing", u.pricingServiceURL), bytes.NewBuffer(payload))
+	if err != nil {
+		return pricing, err
+	}
+
+	token, err := utils.GetTokenFromContext(ctx)
+	if err != nil {
+		return
+	}
+
+	req.Header.Set("Authorization", "Bearer "+token)
+
 	resp, err := http.DefaultClient.Do(req)
 	if err != nil {
 		return pricing, err

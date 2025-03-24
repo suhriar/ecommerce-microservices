@@ -1,0 +1,10 @@
+{"level":"info","time":"2025-03-23T14:26:11.716364+07:00","message":"Server running on port 8003"}
+{"level":"warn","time":"2025-03-23T14:26:37.72631+07:00","message":"system call:interrupt"}
+{"level":"warn","time":"2025-03-23T14:26:37.726429+07:00","message":"shutting down http server"}
+{"level":"warn","time":"2025-03-23T14:26:37.726453+07:00","message":"Shutting down HTTP server..."}
+{"level":"info","time":"2025-03-23T14:26:37.72658+07:00","message":"Server shut down successfully"}
+{"level":"info","time":"2025-03-24T18:02:06.086438+07:00","message":"Server running on port 8003"}
+{"level":"warn","time":"2025-03-24T18:02:14.778683+07:00","message":"system call:interrupt"}
+{"level":"warn","time":"2025-03-24T18:02:14.779728+07:00","message":"shutting down http server"}
+{"level":"warn","time":"2025-03-24T18:02:14.779859+07:00","message":"Shutting down HTTP server..."}
+{"level":"info","time":"2025-03-24T18:02:14.780015+07:00","message":"Server shut down successfully"}

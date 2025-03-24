@@ -3,7 +3,7 @@ package utils
 import (
 	"context"
 	"errors"
-	"order-service/domain"
+	"pricing-service/domain"
 )
 
 type UserAuth struct {
