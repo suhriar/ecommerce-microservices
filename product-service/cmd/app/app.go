@@ -16,9 +16,9 @@ import (
 func NewApp(router *mux.Router, db *sql.DB, rdb *redis.Client) {
 	productRepo := repo.NewProductRepository(db)
 	productCache := cache.NewProductCache(rdb)
-	productUsecase := usecase.NewProductService(productRepo, productCache)
+	productUsecase := usecase.NewProductUsecase(productRepo, productCache)
 
-	productHandler := rest.NewproductHandler(productUsecase)
+	productHandler := rest.NewProductHandler(productUsecase)
 
 	consumer := consumer.NewConsumer(productUsecase)
 	go consumer.StartKafkaConsumer()

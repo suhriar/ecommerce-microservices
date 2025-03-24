@@ -14,9 +14,12 @@ var AppConfig *Config
 type Config struct {
 	Server ServerConfig
 	MySql  MySqlConfig
+	MySql2 MySqlConfig
+	MySql3 MySqlConfig
 	Redis  RedisConfig
 	Jwt    JwtConfig
 	Log    LogConfig
+	Kafka  KafkaConfig
 }
 
 type ServerConfig struct {
@@ -47,6 +50,11 @@ type LogConfig struct {
 	LogFilePath    string
 }
 
+type KafkaConfig struct {
+	Host string
+	Port string
+}
+
 // LoadConfig loads configuration from environment variables
 func LoadConfig() {
 	// Load .env file if it exists
@@ -56,14 +64,28 @@ func LoadConfig() {
 
 	AppConfig = &Config{
 		Server: ServerConfig{
-			Port: getEnv("PORT", "8000"),
+			Port: getEnv("PORT", "8001"),
 		},
 		MySql: MySqlConfig{
 			Host:     getEnv("DB_HOST", "localhost"),
-			Port:     getEnv("DB_PORT", "3306"),
+			Port:     getEnv("DB_PORT", "3307"),
 			User:     getEnv("DB_USER", "root"),
 			Password: getEnv("DB_PASS", ""),
-			Name:     getEnv("DB_NAME", "user-db"),
+			Name:     getEnv("DB_NAME", "order-db"),
+		},
+		MySql2: MySqlConfig{
+			Host:     getEnv("DB2_HOST", "localhost"),
+			Port:     getEnv("DB2_PORT", "3308"),
+			User:     getEnv("DB2_USER", "root"),
+			Password: getEnv("DB2_PASS", ""),
+			Name:     getEnv("DB2_NAME", "order-db"),
+		},
+		MySql3: MySqlConfig{
+			Host:     getEnv("DB3_HOST", "localhost"),
+			Port:     getEnv("DB3_PORT", "3309"),
+			User:     getEnv("DB3_USER", "root"),
+			Password: getEnv("DB3_PASS", ""),
+			Name:     getEnv("DB3_NAME", "order-db"),
 		},
 		Redis: RedisConfig{
 			Host: getEnv("REDIS_HOST", "localhost"),
@@ -77,9 +99,14 @@ func LoadConfig() {
 			Type:        getEnv("LOG_TYPE", "json"),
 			LogFilePath: getEnv("LOG_FILE_PATH", "logs/app.log"),
 		},
+		Kafka: KafkaConfig{
+			Host: getEnv("KAFKA_HOST", "localhost"),
+			Port: getEnv("KAFKA_PORT", "9092"),
+		},
 	}
 
 	AppConfig.Log.LogFileEnabled, _ = strconv.ParseBool(getEnv("LOG_FILE_ENABLED", "true"))
+
 }
 
 // Helper function to get environment variable with a default value

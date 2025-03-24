@@ -9,11 +9,12 @@ import (
 	"syscall"
 	"time"
 
-	"user-service/cmd/app"
-	"user-service/config"
-	"user-service/config/cache"
-	"user-service/config/database"
-	"user-service/pkg/logger"
+	"order-service/cmd/app"
+	"order-service/config"
+	"order-service/config/cache"
+	"order-service/config/database"
+	"order-service/config/kafka"
+	"order-service/pkg/logger"
 
 	"github.com/gorilla/mux"
 	"github.com/rs/zerolog/log"
@@ -41,11 +42,13 @@ func main() {
 	logger.InitializeLogger(config.AppConfig)
 
 	// Initialize DB
-	db, err := database.NewMySQLConnection(config.AppConfig)
+	dbShard, err := database.NewMySQLShardConnection(config.AppConfig)
 	if err != nil {
 		log.Fatal().Err(err).Msg(fmt.Sprintf("Failed to connect to database: %v", err))
 	}
-	defer db.Close()
+	for _, db := range dbShard {
+		defer db.Close()
+	}
 
 	// Initialize DB
 	rdb, err := cache.NewRedisClient(config.AppConfig)
@@ -54,10 +57,12 @@ func main() {
 	}
 	defer rdb.Close()
 
+	kafkaWriter := kafka.NewKafkaWriter(config.AppConfig, "order-topic")
+
 	// Router setup
 	router := mux.NewRouter()
 
-	app.NewApp(router, db, rdb)
+	app.NewApp(router, dbShard, rdb, kafkaWriter)
 
 	// Start server
 	server := &http.Server{

@@ -25,7 +25,7 @@ type productUsecase struct {
 	cache cache.ProductCache
 }
 
-func NewProductService(repo repo.ProductRepository, cache cache.ProductCache) ProductUsecase {
+func NewProductUsecase(repo repo.ProductRepository, cache cache.ProductCache) ProductUsecase {
 	return &productUsecase{
 		repo:  repo,
 		cache: cache,

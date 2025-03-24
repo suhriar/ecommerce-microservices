@@ -88,7 +88,7 @@ func (h *UserHandler) ValidateSession(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	_, email, err := middleware.GetUserFromContext(r.Context())
+	user, err := middleware.GetUserFromContext(r.Context())
 	if err != nil {
 		utils.RespondWithJSON(w, http.StatusUnauthorized, map[string]string{"error": "Unauthorized"})
 		return
@@ -96,7 +96,7 @@ func (h *UserHandler) ValidateSession(w http.ResponseWriter, r *http.Request) {
 
 	tokenString := strings.TrimPrefix(tokenHeader, "Bearer ")
 
-	validateToken, err := h.userUsecase.ValidateToken(r.Context(), email)
+	validateToken, err := h.userUsecase.ValidateToken(r.Context(), user.Email)
 	if err != nil || validateToken != tokenString {
 		utils.RespondWithJSON(w, http.StatusUnauthorized, map[string]string{"error": "Unauthorized"})
 		return

@@ -17,6 +17,7 @@ import (
 type contextKey string
 
 const (
+	UserIDlKey   contextKey = "user_id"
 	UserNameKey  contextKey = "username"
 	UserEmailKey contextKey = "email"
 )
@@ -31,6 +32,19 @@ func NewJWTMiddleware() *JWTMiddleware {
 	return &JWTMiddleware{
 		secretKey: []byte(config.AppConfig.Jwt.Secret),
 	}
+}
+
+type JwtCustomClaims struct {
+	UserID   int    `json:"user_id"`
+	Username string `json:"username"`
+	Email    string `json:"email"`
+	jwt.RegisteredClaims
+}
+
+type UserAuth struct {
+	ID       int    `json:"ud"`
+	Username string `json:"username"`
+	Email    string `json:"email"`
 }
 
 // Middleware mengecek JWT token untuk endpoint yang terproteksi
@@ -52,7 +66,7 @@ func (m *JWTMiddleware) Middleware(next http.Handler) http.Handler {
 		tokenString := parts[1]
 
 		// Parse token dengan custom claims
-		claims := &utils.JwtCustomClaims{}
+		claims := &JwtCustomClaims{}
 		token, err := jwt.ParseWithClaims(tokenString, claims, func(token *jwt.Token) (interface{}, error) {
 			if _, ok := token.Method.(*jwt.SigningMethodHMAC); !ok {
 				return nil, fmt.Errorf("unexpected signing method: %v", token.Header["alg"])
@@ -75,6 +89,7 @@ func (m *JWTMiddleware) Middleware(next http.Handler) http.Handler {
 		// Tambahkan data user ke context
 		ctx := context.WithValue(r.Context(), UserNameKey, claims.Username)
 		ctx = context.WithValue(ctx, UserEmailKey, claims.Email)
+		ctx = context.WithValue(ctx, UserIDlKey, claims.UserID)
 
 		// Lanjutkan request dengan context yang telah diperbarui
 		next.ServeHTTP(w, r.WithContext(ctx))
@@ -87,12 +102,18 @@ func (m *JWTMiddleware) RequireAuth(next http.Handler) http.Handler {
 }
 
 // GetUserFromContext mengambil username dan email dari context
-func GetUserFromContext(ctx context.Context) (string, string, error) {
+func GetUserFromContext(ctx context.Context) (user UserAuth, err error) {
 	username, ok1 := ctx.Value(UserNameKey).(string)
 	email, ok2 := ctx.Value(UserEmailKey).(string)
+	id, ok3 := ctx.Value(UserIDlKey).(int)
 
-	if !ok1 || !ok2 {
-		return "", "", errors.New("could not get user data from context")
+	if !ok1 || !ok2 || !ok3 {
+		return user, errors.New("could not get user data from context")
 	}
-	return username, email, nil
+
+	user.ID = id
+	user.Username = username
+	user.Email = email
+
+	return user, nil
 }

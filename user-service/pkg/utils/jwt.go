@@ -10,6 +10,7 @@ import (
 )
 
 type JwtCustomClaims struct {
+	UserID   int    `json:"user_id"`
 	Username string `json:"username"`
 	Email    string `json:"email"`
 	jwt.RegisteredClaims
@@ -19,6 +20,7 @@ type JwtCustomClaims struct {
 func GenerateJWT(user domain.User) (tokenString string, err error) {
 	// Buat claims dengan data user
 	claims := &JwtCustomClaims{
+		UserID:   user.ID,
 		Username: user.Username,
 		Email:    user.Email,
 		RegisteredClaims: jwt.RegisteredClaims{

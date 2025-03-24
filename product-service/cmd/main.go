@@ -52,7 +52,7 @@ func main() {
 	if err != nil {
 		log.Fatal().Err(err).Msg(fmt.Sprintf("Failed to connect to redis: %v", err))
 	}
-	defer db.Close()
+	defer rdb.Close()
 
 	// Router setup
 	router := mux.NewRouter()
